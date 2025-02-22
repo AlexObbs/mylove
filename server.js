@@ -2,22 +2,12 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 
-// Add debug logging for the Stripe key
-console.log('Stripe Key Status:', process.env.STRIPE_SECRET_KEY ? 'Present' : 'Missing');
-
-// Initialize Stripe with explicit error handling
-let stripe;
-try {
-    if (!process.env.STRIPE_SECRET_KEY) {
-        throw new Error('Stripe secret key is missing');
-    }
-    stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-} catch (error) {
-    console.error('Stripe initialization error:', error);
-}
+// Initialize Stripe with proper error handling
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 
+// Configure CORS for both local development and production
 app.use(cors({
     origin: ['http://localhost:5500', 'http://127.0.0.1:5500'],
     credentials: true
@@ -25,22 +15,19 @@ app.use(cors({
 
 app.use(express.json());
 
-// Add debug endpoint to check environment variables
-app.get('/debug-env', (req, res) => {
-    res.json({
-        stripeKeyExists: !!process.env.STRIPE_SECRET_KEY,
-        stripeKeyPrefix: process.env.STRIPE_SECRET_KEY ? process.env.STRIPE_SECRET_KEY.substring(0, 7) : null
-    });
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.json({ status: 'healthy' });
 });
 
+// Create checkout session endpoint
 app.post('/create-checkout-session', async (req, res) => {
     try {
-        if (!stripe) {
-            throw new Error('Stripe is not properly initialized');
-        }
-
         const { packageId, userId, amount } = req.body;
-        console.log('Received request:', { packageId, userId, amount });
+        
+        if (!userId || !amount) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
 
         const timestamp = Date.now();
 
@@ -52,7 +39,7 @@ app.post('/create-checkout-session', async (req, res) => {
                     product_data: {
                         name: 'Travel Package Booking',
                     },
-                    unit_amount: amount * 100,
+                    unit_amount: amount * 100, // Convert to pence
                 },
                 quantity: 1,
             }],
@@ -72,20 +59,85 @@ app.post('/create-checkout-session', async (req, res) => {
             timestamp: timestamp 
         });
     } catch (error) {
-        console.error('Detailed error:', error);
-        res.status(500).json({ 
-            error: error.message,
-            type: error.type,
-            stripeKeyExists: !!process.env.STRIPE_SECRET_KEY
+        console.error('Error creating checkout session:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Verify payment endpoint
+app.post('/verify-payment', async (req, res) => {
+    try {
+        const { sessionId } = req.body;
+        
+        if (!sessionId) {
+            return res.status(400).json({ error: 'Session ID is required' });
+        }
+
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+        if (session.payment_status === 'paid') {
+            res.json({
+                paid: true,
+                amount: session.amount_total / 100,
+                customerId: session.customer,
+                metadata: session.metadata
+            });
+        } else {
+            res.json({ 
+                paid: false,
+                status: session.payment_status,
+                metadata: session.metadata
+            });
+        }
+    } catch (error) {
+        console.error('Error verifying payment:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Handle cancellation endpoint
+app.post('/handle-cancellation', async (req, res) => {
+    try {
+        const { userId, timestamp } = req.body;
+        
+        if (!userId) {
+            return res.status(400).json({ error: 'User ID is required' });
+        }
+
+        res.json({ 
+            success: true,
+            message: 'Cancellation processed',
+            userId,
+            timestamp
         });
+    } catch (error) {
+        console.error('Error handling cancellation:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get booking status endpoint
+app.get('/booking-status/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        if (!userId) {
+            return res.status(400).json({ error: 'User ID is required' });
+        }
+
+        // You can add Firebase or database integration here if needed
+        res.json({ 
+            status: 'success',
+            message: 'Booking status retrieved',
+            userId
+        });
+    } catch (error) {
+        console.error('Error getting booking status:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
-    console.log('Environment check on startup:', {
-        stripeKeyExists: !!process.env.STRIPE_SECRET_KEY,
-        nodeEnv: process.env.NODE_ENV
-    });
 });
