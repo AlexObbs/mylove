@@ -21,17 +21,52 @@ app.get('/health', (req, res) => {
 });
 // Example Express.js backend endpoints
 
-// Store booking data
+// In your server.js
 app.post('/store-booking', async (req, res) => {
     try {
+        console.log('Received booking data:', req.body);
+        
+        if (!req.body.userId) {
+            throw new Error('Missing userId in booking data');
+        }
+
         const bookingData = req.body;
-        // Store in your database
-        const bookingId = await db.bookings.create(bookingData);
-        res.json({ bookingId });
+        
+        // Add server timestamp
+        bookingData.serverTimestamp = admin.firestore.FieldValue.serverTimestamp();
+        
+        // Create a new document in 'pending-bookings' collection
+        const bookingRef = await db.collection('pending-bookings').add(bookingData);
+        
+        console.log('Successfully stored booking with ID:', bookingRef.id);
+        
+        res.json({ 
+            success: true,
+            bookingId: bookingRef.id 
+        });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('Detailed error in store-booking:', error);
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ 
+            success: false,
+            error: error.message,
+            errorDetails: error.stack
+        });
     }
 });
+
+// Add CORS configuration
+const corsOptions = {
+    origin: [
+        'http://localhost:5500',
+        'http://127.0.0.1:5500',
+        // Add your production domain when you deploy
+    ],
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Accept'],
+    credentials: true
+};
+
 
 // Update verify-payment endpoint
 app.post('/verify-payment', async (req, res) => {
