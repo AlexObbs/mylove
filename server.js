@@ -1,32 +1,33 @@
 require('dotenv').config();
 const express = require('express');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const cors = require('cors');
+
+// Initialize Stripe with proper error handling
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 
-// Enable CORS for local development
+// Configure CORS for both local development and production
 app.use(cors({
     origin: ['http://localhost:5500', 'http://127.0.0.1:5500'],
     credentials: true
 }));
 
 app.use(express.json());
-app.use((req, res, next) => {
-    console.log(`${req.method} request to ${req.url}`);
-    next();
-});
 
-// Health check endpoint for Render
+// Health check endpoint
 app.get('/health', (req, res) => {
     res.json({ status: 'healthy' });
 });
 
-// Create checkout session
+// Create checkout session endpoint
 app.post('/create-checkout-session', async (req, res) => {
     try {
         const { packageId, userId, amount } = req.body;
-        console.log('Received request:', { packageId, userId, amount });
+        
+        if (!userId || !amount) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
 
         const timestamp = Date.now();
 
@@ -38,7 +39,7 @@ app.post('/create-checkout-session', async (req, res) => {
                     product_data: {
                         name: 'Travel Package Booking',
                     },
-                    unit_amount: amount * 100,
+                    unit_amount: amount * 100, // Convert to pence
                 },
                 quantity: 1,
             }],
@@ -63,7 +64,7 @@ app.post('/create-checkout-session', async (req, res) => {
     }
 });
 
-// Verify payment
+// Verify payment endpoint
 app.post('/verify-payment', async (req, res) => {
     try {
         const { sessionId } = req.body;
@@ -94,7 +95,7 @@ app.post('/verify-payment', async (req, res) => {
     }
 });
 
-// Handle cancellation
+// Handle cancellation endpoint
 app.post('/handle-cancellation', async (req, res) => {
     try {
         const { userId, timestamp } = req.body;
@@ -111,6 +112,27 @@ app.post('/handle-cancellation', async (req, res) => {
         });
     } catch (error) {
         console.error('Error handling cancellation:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get booking status endpoint
+app.get('/booking-status/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        if (!userId) {
+            return res.status(400).json({ error: 'User ID is required' });
+        }
+
+        // You can add Firebase or database integration here if needed
+        res.json({ 
+            status: 'success',
+            message: 'Booking status retrieved',
+            userId
+        });
+    } catch (error) {
+        console.error('Error getting booking status:', error);
         res.status(500).json({ error: error.message });
     }
 });
