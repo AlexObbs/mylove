@@ -19,6 +19,36 @@ app.use(express.json());
 app.get('/health', (req, res) => {
     res.json({ status: 'healthy' });
 });
+// Example Express.js backend endpoints
+
+// Store booking data
+app.post('/store-booking', async (req, res) => {
+    try {
+        const bookingData = req.body;
+        // Store in your database
+        const bookingId = await db.bookings.create(bookingData);
+        res.json({ bookingId });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Update verify-payment endpoint
+app.post('/verify-payment', async (req, res) => {
+    try {
+        const { sessionId, bookingId } = req.body;
+        
+        // Verify payment with Stripe
+        const paymentData = await stripe.checkout.sessions.retrieve(sessionId);
+        
+        // Get booking data from your database
+        const bookingData = await db.bookings.findById(bookingId);
+        
+        res.json({ paymentData, bookingData });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // Create checkout session endpoint
 app.post('/create-checkout-session', async (req, res) => {
