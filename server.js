@@ -13,6 +13,10 @@ app.use(express.json());
 // Initialize Firebase Admin using environment variables
 let db;
 try {
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY
+        ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+        : undefined;
+  
   const serviceAccount = {
   "type": "service_account",
   "project_id": "trial-17319",
