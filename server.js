@@ -1,19 +1,28 @@
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-
-// Initialize Stripe with proper error handling
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const admin = require('firebase-admin');
+const path = require('path');
 
 const app = express();
 
-// Configure CORS for both local development and production
-app.use(cors({
-    origin: ['http://localhost:5500', 'http://127.0.0.1:5500'],
-    credentials: true
-}));
-
+// Middleware
+app.use(cors());
 app.use(express.json());
+
+// Initialize Firebase Admin - Make sure you have your service account key
+try {
+    const serviceAccount = require('./serviceAccountKey.json'); // You'll need this file
+    admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        projectId: 'trial-17319' // Your Firebase project ID
+    });
+    console.log('Firebase Admin initialized successfully');
+} catch (error) {
+    console.error('Error initializing Firebase Admin:', error);
+}
+
+const db = admin.firestore();
 
 // Health check endpoint
 app.get('/health', (req, res) => {
