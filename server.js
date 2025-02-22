@@ -11,6 +11,7 @@ app.use(cors());
 app.use(express.json());
 
 // Initialize Firebase Admin using environment variables
+let db;
 try {
   const serviceAccount = {
   "type": "service_account",
@@ -34,6 +35,7 @@ try {
 } catch (error) {
     console.error('Error initializing Firebase Admin:', error);
 }
+db = admin.firestore();
 
 // Rest of your server code remains the same...
 
