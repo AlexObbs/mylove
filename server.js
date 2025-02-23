@@ -44,8 +44,8 @@ app.post('/create-checkout-session', async (req, res) => {
                 quantity: 1,
             }],
             mode: 'payment',
-            success_url: `http://localhost:5500/payment-success.html?session_id={CHECKOUT_SESSION_ID}&userId=${userId}&timestamp=${timestamp}`,
-            cancel_url: `http://localhost:5500/payment-cancelled.html?userId=${userId}&timestamp=${timestamp}`,
+            success_url: `https://alexobbs.github.io/payment-success.html?session_id={CHECKOUT_SESSION_ID}&userId=${userId}&timestamp=${timestamp}`,
+            cancel_url: `https://alexobbs.github.io/payment-cancelled.html?userId=${userId}&timestamp=${timestamp}`,
             client_reference_id: userId,
             metadata: {
                 userId: userId,
