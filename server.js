@@ -9,7 +9,7 @@ const app = express();
 
 // Configure CORS for both local development and production
 app.use(cors({
-    origin: ['http://localhost:5500', 'http://127.0.0.1:5500'],
+    origin: ['https://alexobbs.github.io'],
     credentials: true
 }));
 
