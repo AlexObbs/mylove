@@ -9,7 +9,7 @@ const app = express();
 
 // Configure CORS for both local development and production
 app.use(cors({
-    origin: ['https://alexobbs.github.io'],
+    origin: ['https://kenyaonabudgetsafaris.co.uk'],
     credentials: true
 }));
 
@@ -44,8 +44,8 @@ app.post('/create-checkout-session', async (req, res) => {
                 quantity: 1,
             }],
             mode: 'payment',
-            success_url: `https://alexobbs.github.io/safaari/payment-success.html?session_id={CHECKOUT_SESSION_ID}&userId=${userId}&timestamp=${timestamp}`,
-            cancel_url: `https://alexobbs.github.io/safaari/payment-cancelled.html?userId=${userId}&timestamp=${timestamp}`,
+            success_url: `https://kenyaonabudgetsafaris.co.uk/payment-success.html?session_id={CHECKOUT_SESSION_ID}&userId=${userId}&timestamp=${timestamp}`,
+            cancel_url: `https://kenyaonabudgetsafaris.co.uk/payment-cancelled.html?userId=${userId}&timestamp=${timestamp}`,
             client_reference_id: userId,
             metadata: {
                 userId: userId,
